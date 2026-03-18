@@ -1,102 +1,111 @@
-# ORSYS-ARY v3.0 — Firebase Edition
+# ORSYS — Online Cash Management System
 
-React + Vite + Firebase (Auth + Firestore + Hosting) — No backend server needed.
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)
+![Firebase](https://img.shields.io/badge/Firebase-11-FFCA28?logo=firebase)
+![Vite](https://img.shields.io/badge/Vite-5-646CFF?logo=vite)
 
----
+A modern, open-source cash receipt and voucher management system built with React, Vite, and Firebase. Designed for small to medium organizations that need a simple, reliable way to manage cash collections.
 
-## ⚡ Quick Start
+## ✨ Features
 
-### Step 1 — Firebase Project banao
+- 🔐 **Role-based Authentication** — Admin, Manager, Cashier, Reports roles
+- 📄 **Voucher Management** — Create, edit, delete, and view cash receipts
+- 💰 **Denomination Tracking** — Detailed cash breakdown by note value (PKR)
+- 📊 **Reports & Export** — Date-range reports with Excel export
+- 🔍 **Receipt Verification** — Public voucher verification by slip number
+- 🎯 **Admin Panel** — Manage users and payment heads
+- 📱 **PWA Support** — Installable app, works offline
 
-1. https://console.firebase.google.com → **Add project**
-2. Project name: `orsys-ary`
-3. Google Analytics: optional (off kar sakte ho)
-4. Project ban jayega
+## 🛠️ Tech Stack
 
-### Step 2 — Firebase services enable karo
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 18, Vite 5, TypeScript |
+| Styling | Tailwind CSS |
+| Backend | Firebase (Auth + Firestore) |
+| Hosting | Firebase Hosting |
+| State | Zustand, TanStack Query |
+| Forms | React Hook Form + Zod |
 
-**Authentication:**
-- Build → Authentication → Get started
-- Sign-in method → **Email/Password** → Enable → Save
+## 🚀 Quick Start
 
-**Firestore:**
-- Build → Firestore Database → Create database
-- **Start in production mode** → Next
-- Location: `asia-south1` (Pakistan ke liye best) → Enable
+### Prerequisites
 
-**Hosting:**
-- Build → Hosting → Get started → follow steps
+- Node.js 18+
+- A Firebase project — [console.firebase.google.com](https://console.firebase.google.com)
 
-### Step 3 — Firebase config copy karo
+### 1. Clone & Install
 
-Project Settings (gear icon) → General → Your apps → **Add app** → Web (`</>`)
-- App nickname: `orsys-ary-web`
-- Firebase SDK snippet: **Config** copy karo
+```bash
+git clone https://github.com/your-username/orsys.git
+cd orsys
+npm install
+```
 
-### Step 4 — .env file banao
+### 2. Configure Environment
 
 ```bash
 cp .env.example .env
 ```
 
-`.env` mein apni values daalo:
+Fill in your Firebase credentials in `.env`:
 
 ```env
-VITE_FIREBASE_API_KEY=AIzaSy...
-VITE_FIREBASE_AUTH_DOMAIN=orsys-ary.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=orsys-ary
-VITE_FIREBASE_STORAGE_BUCKET=orsys-ary.appspot.com
-VITE_FIREBASE_MESSAGING_SENDER_ID=123456789
-VITE_FIREBASE_APP_ID=1:123456789:web:abc123
+VITE_FIREBASE_API_KEY=
+VITE_FIREBASE_AUTH_DOMAIN=
+VITE_FIREBASE_PROJECT_ID=
+VITE_FIREBASE_STORAGE_BUCKET=
+VITE_FIREBASE_MESSAGING_SENDER_ID=
+VITE_FIREBASE_APP_ID=
 ```
 
-### Step 5 — Dependencies install karo
+### 3. Firebase Setup
 
-```bash
-npm install
+1. Enable **Authentication** → Email/Password
+2. Enable **Firestore Database** → Production mode
+3. Enable **Hosting**
+4. Apply [Security Rules](#-security-rules)
+
+### 4. Create First Admin
+
+Firebase Console → Authentication → Add user, then in Firestore create a document in the `users` collection with the user's UID as the document ID:
+
+```json
+{
+  "name": "Your Name",
+  "email": "your@email.com",
+  "role": "admin",
+  "status": "active"
+}
 ```
 
-### Step 6 — Pehla Admin user banao
-
-Firebase Console → Authentication → Users → **Add user**
-- Email: `admin@aryservices.com.pk`
-- Password: `Admin@1234` (baad mein zaroor change karo)
-- **UID copy karo** (user ke samne show hoga)
-
-Phir Firestore → **users** collection → **Add document**
-- Document ID: (woh UID jo copy kiya)
-- Fields:
-  ```
-  name:   "Admin User"       (string)
-  email:  "admin@aryservices.com.pk" (string)
-  role:   "admin"            (string)
-  status: "active"           (string)
-  ```
-
-Ab se Admin Panel se nayi users directly bana sakte ho — yeh sirf pehli dafa karna hai.
-
-### Step 7 — Run karo
+### 5. Run
 
 ```bash
 npm run dev
 # → http://localhost:5173
 ```
 
----
+## 📦 Deploy
 
-## 🔐 Firestore Security Rules
+```bash
+npm install -g firebase-tools
+firebase login
+firebase init hosting
+npm run deploy
+```
 
-Firebase Console → Firestore → **Rules** tab mein yeh paste karo:
+## 🔐 Security Rules
+
+Paste in Firebase Console → Firestore → Rules:
 
 ```javascript
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
-    function isAuth() {
-      return request.auth != null;
-    }
+    function isAuth() { return request.auth != null; }
     function getUser() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
@@ -104,23 +113,16 @@ service cloud.firestore {
       return isAuth() && getUser().role in roles && getUser().status == 'active';
     }
 
-    // Users collection
     match /users/{userId} {
       allow read:  if isAuth();
       allow write: if hasRole(['admin']);
-      // Allow user to read own doc
-      allow read:  if request.auth.uid == userId;
     }
-
-    // Vouchers collection
     match /vouchers/{voucherId} {
       allow read:   if isAuth();
       allow create: if hasRole(['admin', 'manager', 'cashier']);
       allow update: if hasRole(['admin', 'manager']);
       allow delete: if hasRole(['admin']);
     }
-
-    // Heads collection
     match /heads/{headId} {
       allow read:  if isAuth();
       allow write: if hasRole(['admin']);
@@ -129,85 +131,36 @@ service cloud.firestore {
 }
 ```
 
-**Publish** button dabao — rules live ho jayenge.
-
----
-
-## 🔑 Firestore Indexes
-
-Reports page ke liye compound indexes chahiye.
-Firebase Console → Firestore → **Indexes** → Add index:
-
-| Collection | Field 1 | Field 2 | Field 3 | Query scope |
-|------------|---------|---------|---------|-------------|
-| vouchers   | paymentStatus (Asc) | entryDate (Asc) | — | Collection |
-| vouchers   | entryDate (Asc) | createdAt (Desc) | — | Collection |
-
-Ya jab app run karo toh console mein error aayega jisme direct link hoga — woh click karo aur index auto-ban jayega.
-
----
-
-## 🚀 Firebase Hosting Deploy
-
-```bash
-# Firebase CLI install (ek baar)
-npm install -g firebase-tools
-
-# Login
-firebase login
-
-# Init (project folder mein)
-firebase init hosting
-# → Use existing project → orsys-ary
-# → Public directory: dist
-# → Single-page app: YES
-# → GitHub auto-deploy: optional
-
-# Build + Deploy
-npm run deploy
-# → https://orsys-ary.web.app
-```
-
----
-
-## 🗄️ Firestore Collections
-
-```
-users/          {uid}  → name, email, role, status
-vouchers/       {id}   → slipNo, paymentFrom, pointPerson, paymentMode,
-                         paymentStatus, totalAmount, denominations[],
-                         headId, headName, remarks, entryDate, createdAt,
-                         createdById, createdByName
-heads/          {id}   → name, code, category, description, status
-```
-
----
-
-## 🔐 Role Permissions
+## 👥 Role Permissions
 
 | Action         | admin | manager | cashier | reports |
-|----------------|-------|---------|---------|---------|
-| View vouchers  | ✅    | ✅      | ✅      | ✅      |
-| Create voucher | ✅    | ✅      | ✅      | ❌      |
-| Edit voucher   | ✅    | ✅      | ❌      | ❌      |
-| Delete voucher | ✅    | ❌      | ❌      | ❌      |
-| View reports   | ✅    | ✅      | ❌      | ✅      |
-| Export Excel   | ✅    | ✅      | ❌      | ✅      |
-| Admin panel    | ✅    | ❌      | ❌      | ❌      |
+|----------------|:-----:|:-------:|:-------:|:-------:|
+| View vouchers  | ✅ | ✅ | ✅ | ✅ |
+| Create voucher | ✅ | ✅ | ✅ | ❌ |
+| Edit voucher   | ✅ | ✅ | ❌ | ❌ |
+| Delete voucher | ✅ | ❌ | ❌ | ❌ |
+| View reports   | ✅ | ✅ | ❌ | ✅ |
+| Export Excel   | ✅ | ✅ | ❌ | ✅ |
+| Admin panel    | ✅ | ❌ | ❌ | ❌ |
 
----
+## 🗄️ Data Schema
 
-## 📅 Firebase Free Tier Limits (Spark Plan)
+```
+users/       {uid}  → name, email, role, status
+vouchers/    {id}   → slipNo, paymentFrom, pointPerson, paymentMode,
+                      paymentStatus, totalAmount, denominations[],
+                      headId, headName, remarks, entryDate, createdAt
+heads/       {id}   → name, code, category, description, status
+```
 
-| Service       | Free Limit        | ORSYS-ARY usage |
-|---------------|-------------------|-----------------|
-| Auth users    | Unlimited         | ~10 users ✅    |
-| Firestore reads | 50,000/day      | ~500/day ✅     |
-| Firestore writes | 20,000/day     | ~50/day ✅      |
-| Hosting       | 10 GB/month       | ~5 MB ✅        |
+## 🤝 Contributing
 
-**ARY ke liye free tier kaafi hai** — upgrade ki zaroorat nahi.
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting a pull request.
 
----
+## 📋 Changelog
 
-*Built with ❤️ by TechPeer for ARY Services*
+See [CHANGELOG.md](CHANGELOG.md) for version history.
+
+## 📄 License
+
+This project is licensed under the MIT License — see [LICENSE](LICENSE) for details.

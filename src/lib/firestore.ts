@@ -46,8 +46,8 @@ export interface Voucher {
   paymentStatus: PaymentStatus
   totalAmount:   number
   denominations: Denomination[]
-  headId?:       string
-  headName?:     string
+  headId:        string | null
+  headName:      string | null
   remarks?:      string
   entryDate:     Timestamp
   createdAt:     Timestamp
@@ -151,9 +151,10 @@ export async function deleteVoucher(id: string): Promise<void> {
 // ─── Head helpers ─────────────────────────────────
 
 export async function listHeads(status: 'active' | 'inactive' = 'active'): Promise<Head[]> {
-  const q    = query(collection(db, COLLECTIONS.HEADS), where('status', '==', status), orderBy('name'))
+  const q    = query(collection(db, COLLECTIONS.HEADS), where('status', '==', status))
   const snap = await getDocs(q)
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as Head))
+  const heads = snap.docs.map(d => ({ id: d.id, ...d.data() } as Head))
+  return heads.sort((a, b) => a.name.localeCompare(b.name))
 }
 
 export async function createHead(payload: Omit<Head, 'id' | 'createdAt'>): Promise<string> {

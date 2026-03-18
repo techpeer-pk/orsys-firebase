@@ -1,9 +1,6 @@
 import { initializeApp } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
-import {
-  getFirestore,
-  enableIndexedDbPersistence,
-} from 'firebase/firestore'
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore'
 
 const firebaseConfig = {
   apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
@@ -16,9 +13,10 @@ const firebaseConfig = {
 
 export const app  = initializeApp(firebaseConfig)
 export const auth = getAuth(app)
-export const db   = getFirestore(app)
 
-// Offline persistence (PWA support)
-enableIndexedDbPersistence(db).catch(() => {
-  // Silently ignore — multiple tabs open
+// Modern offline persistence API (replaces deprecated enableIndexedDbPersistence)
+export const db = initializeFirestore(app, {
+  cache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager(), // works across multiple tabs
+  }),
 })

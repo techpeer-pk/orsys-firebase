@@ -5,12 +5,14 @@ import { useCreateVoucher } from '@/hooks/useQueries'
 import { useAuthStore } from '@/store/authStore'
 import { VoucherForm } from '@/components/VoucherForm'
 import { PageHeader } from '@/components/ui-helpers'
-import { DENO_VALUES, calcTotal } from '@/lib/utils'
+import { calcTotal } from '@/lib/utils'
+import { useHeads } from '@/hooks/useQueries'
 
 export default function NewVoucherPage() {
   const navigate = useNavigate()
   const { user }  = useAuthStore()
   const mutation  = useCreateVoucher()
+  const { data: heads } = useHeads()
 
   return (
     <div className="max-w-3xl animate-fade-in">
@@ -34,8 +36,8 @@ export default function NewVoucherPage() {
               paymentStatus: (values.paymentStatus ?? 'pending') as import('@/lib/firestore').PaymentStatus,
               totalAmount:   calcTotal(denoms),
               denominations: denoms,
-              headId:        values.headId || undefined,
-              headName:      undefined,
+              headId:        values.headId || null,
+              headName:      heads?.find(h => h.id === values.headId)?.name || null,
               remarks:       values.remarks,
               entryDate:     Timestamp.fromDate(values.entryDate ? new Date(values.entryDate) : new Date()),
               createdById:   user!.id,

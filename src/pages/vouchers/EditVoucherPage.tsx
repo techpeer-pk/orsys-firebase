@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { Timestamp } from 'firebase/firestore'
-import { useVoucher, useUpdateVoucher } from '@/hooks/useQueries'
+import { useVoucher, useUpdateVoucher, useHeads } from '@/hooks/useQueries'
 import { useAuthStore } from '@/store/authStore'
 import { VoucherForm } from '@/components/VoucherForm'
 import { PageHeader, FullPageLoader } from '@/components/ui-helpers'
@@ -13,6 +13,7 @@ export default function EditVoucherPage() {
   const { user }  = useAuthStore()
   const { data: voucher, isLoading } = useVoucher(id!)
   const mutation  = useUpdateVoucher(id!)
+  const { data: heads } = useHeads()
 
   if (isLoading) return <FullPageLoader />
   if (!voucher)  return <p className="text-muted-foreground text-sm">Voucher not found</p>
@@ -39,7 +40,8 @@ export default function EditVoucherPage() {
               paymentStatus: (values.paymentStatus ?? voucher.paymentStatus) as import('@/lib/firestore').PaymentStatus,
               totalAmount:   calcTotal(denoms),
               denominations: denoms,
-              headId:        values.headId || undefined,
+              headId:        values.headId || null,
+              headName:      heads?.find(h => h.id === values.headId)?.name || null,
               remarks:       values.remarks,
               entryDate:     Timestamp.fromDate(values.entryDate ? new Date(values.entryDate) : new Date()),
               updatedById:   user!.id,
